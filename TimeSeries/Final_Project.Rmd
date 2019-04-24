@@ -1,0 +1,216 @@
+# <span style="color:blue"> Time Series Analysis Final Project  </span>
+```{r }
+#Load all the required packages
+library(astsa)
+library(xts)
+```
+
+### <span style="color:red"> Data Description </span>
+
+
+#### Data Source
+
+I have used the unemployment data set from the astsa package for this final project. Below are the details about the data set.
+
+Data set: U.S Unemployment
+
+Description: Monthly U.S Unemployment Series(1948-1978, n=372)
+Dataset contains unemployment count in 1000s
+
+#### Statistical summary of the unemployment data set
+
+
+Mean                  : **`r mean(unemp)`**
+
+Median                : **`r median(unemp)`**
+
+Standard deviation    : **`r sd(unemp)`**
+
+Variance              : **`r max(unemp)`**
+
+Minimum value         : **`r min(unemp)`**
+
+Maximum value         : **`r max(unemp)`**
+
+IQR                   : **`r IQR(unemp)`**
+
+
+#### Time series description
+
+Time index of the first observation from unemployment data set: **`r start(unemp)`**
+
+Time index of the last observation from unemployment data set: **`r end(unemp)`**
+
+Frequency of the unemployment data set: **`r frequency(unemp)`**
+
+Total observations in the dataset : **`r length(unemp)`**
+
+First 10 elements of the unemployment data set:
+**`r head(unemp,n=10)`**
+
+
+### <span style="color:red"> Data Exploration </span>
+
+##### Boxplot  
+```{r boxplot}
+boxplot(unemp~cycle(unemp))
+```
+
+##### Trend plot
+```{r Trendplot}
+plot(unemp,ylab="Unemployment",xlab="Years") # plot the raw data
+abline(reg=lm(unemp~time(unemp))) # fit a trend line
+```
+
+##### Histogram
+```{r Histogram}
+hist(unemp) # plot the raw data
+```
+
+Based on the above trend plot there is a Linear trend in the unemployment rate and also there is some periodic seasonality in the data set especially when we look at the data betweek 1955 and 1970.Also there is a change in mean and variance across the years in the unemployment data set. 
+
+
+I have converted the unemp data set to xts to check the yearly mean and variance and plot them.Check the below plots to see the difference in mean and variance across the years.
+
+```{r plot_mean_variance}
+unemp_xts<-as.xts(unemp) # convert the unemp ts to xts
+ep<-endpoints(unemp_xts,on="years") #endpoints for each year in the dataset
+plot(period.apply(unemp_xts,INDEX=ep,FUN=mean),main ="Mean across the years") # plot mean
+plot(period.apply(unemp_xts,INDEX=ep,FUN=var),main="Variance across the years") #Plot variance
+```
+
+##### Data transformation.
+
+As there is linear trend and seasonality in the data set I will apply the diff transformation to remove that.
+
+```{r transformation}
+d_unemp <- diff(unemp)
+plot(d_unemp)
+```
+
+The above plot shows that seasonality still persistent. It can be removed by applying "Seasonal Difference Transformation". For a periodic series the diff function in R with additional seasonal argument s can remove periodic trends. 
+
+```{r seasonal diff transformation}
+dd_unemp <- diff((d_unemp), lag = 12)  
+plot(dd_unemp)
+```
+
+
+
+### <span style="color:red"> Data Decomposition </span>
+
+The time series data set can be decomposed into multiple different time series. The original time series is split into 3 different components.
+
+Seasonal: Its pattern which repeat after fixed period of time.
+Trend: Trend of the time series. Increasing or decreasing.
+Residual or Random: This is residual of the ts after the seasonal and trend components are removed
+
+```{r decompose}
+unemp_de <- decompose(unemp)
+sample(unemp_de$seasonal,10)
+sample(unemp_de$trend,10)
+sample(unemp_de$random,10)
+```
+
+Plot trend, seasonal and residual of unemployment time series.  
+
+```{r decompose plot}
+plot(decompose(unemp))
+```
+
+The decomposition plot shows the observed values in unemployment time series first and then shows the trend where we can see the linear trend and then the seasonal plot shows that unemployment starts higher in Jan and goes low in April and again goes high in June and goes down at the end of the year. The random or residual shows the random component in the time series.
+
+
+
+### <span style="color:red"> Regression </span>
+
+```{r regression}
+fit <- lm(unemp~time(unemp), na.action=NULL)
+summary(fit )
+```
+
+The residual shows the difference between the actual value and the value predicted by model. As per the result this value ranges from -234 to 318. As per the below histogram of the residulas have symmterical distribution around 0 and looks normally distributed which indicates that linear model is appropriate. The R squared or adjusted R squared value shows how close our data to the linear regression model. The value must be between 0 and 1. The closer it gets to 1 the better model fits the data. For the unemployment ts the R squared shows the value 0.49 which means the accuracy is only close to half.
+
+```{r histogram of residula}
+hist(fit$residuals, main="Histogram of Residuals")
+```
+
+
+### <span style="color:red"> ARMA Model </span>
+
+Based on the below ACF and PACF plots for the differenced unemployment data, the ACF tails off but PACF cuts off at lag2 hence we can fit AR(2) model
+
+```{r acf pacf plot}
+acf2(dd_unemp)
+```
+
+
+
+### <span style="color:red"> ARIMA Model Diagnostics</span>
+
+
+#### Fit ARIMA Models with different parameters.
+
+As we already converted the unemp time series data set to stationary above through multiple differentiation. We can use that data directly in the ARIMA model and use d =0.
+
+
+##### ARIMA(1,0,0)
+```{r }
+sarima(dd_unemp,1,0,0)
+```
+
+##### ARIMA(2,0,0)
+```{r} 
+sarima(dd_unemp,2,0,0)
+```
+
+##### ARIMA(3,0,0)
+```{r}
+sarima(dd_unemp,3,0,0)
+```
+
+##### ARIMA(0,0,1)
+```{r}
+sarima(dd_unemp,0,0,1)
+```
+
+##### ARIMA(1,0,1)
+```{r}
+sarima(dd_unemp,1,0,1)
+```
+
+
+
+#### Best model
+Below are the AIC and BIC values of different models captured from the above results. Based on this table the AIC and BIC values are low for the model ARIMA(2,0,0) and then ARIMA(3,0,0) and it increases when the parameter is added. As we can see from the t-table for (3,0,0) the third AR parameter is not significantly different from 0 and the first 2 AR parameters are approximately same hence **ARIMA(2,0,0)**  model is the best fit for this data.
+
+ARIMA Model   |     AIC       |   BIC      |
+------------- | ------------- | ---------- |
+   (1,0,0)    |    7.6416     |   6.6632   |
+   (2,0,0)    |    7.5558     |   6.5883   |
+   (3,0,0)    |    7.5590     |   6.6022   |
+   (0,0,1)    |    7.6589     |   6.6805   |
+   (1,0,1)    |    7.5841     |   6.6166   |   
+   
+
+#### Resdiual Diagnostics
+
+**Standardized Residuals:**
+As we can see in the Standardized Residual plot below there are no patterns and it looks like white noise. Also as per this plot the mean looks to be close to 0 and there is not much change in the variance acorss the years.(except for few years like 1975)
+
+**ACF of Residuals:**
+ACF of the Residual can be used to assess the whiteness . 95% of the values are with in the blue boundary in the ACF plot of residulas. Also the QQ Plot of residual shows that it follows normal distribution. 
+
+**Normal QQ Plot:**
+The residuals are normal distribution as the points are falling on the line in QQ plot
+
+
+##### ARIMA(2,0,0)
+```{r} 
+sarima(dd_unemp,2,0,0)
+```
+
+
+
+
+
