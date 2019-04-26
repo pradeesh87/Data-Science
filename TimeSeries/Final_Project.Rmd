@@ -13,12 +13,13 @@ library(xts)
 I have used the unemployment data set from the astsa package for this final project. Below are the details about the data set.
 
 Data set: U.S Unemployment
-
+Origin: The data set is available in astsa package. Source not mentioned.
 Description: Monthly U.S Unemployment Series(1948-1978, n=372)
 Dataset contains unemployment count in 1000s
 
 #### Statistical summary of the unemployment data set
 
+Below is the statistical summary of the unemployment time series data. 
 
 Mean                  : **`r mean(unemp)`**
 
@@ -51,10 +52,14 @@ First 10 elements of the unemployment data set:
 
 ### <span style="color:red"> Data Exploration </span>
 
+
+The below box plot across months helps to understand the seasonal effect on the unemp data set. As we can see unemployment seems to be high in start and the mid of the year.
 ##### Boxplot  
 ```{r boxplot}
 boxplot(unemp~cycle(unemp))
 ```
+
+Based on the below trend plot there is a Linear trend in the unemployment data set and also there is some periodic seasonality in the data set especially when we look at the data betweek 1955 and 1970.Also there is a change in mean and variance across the years in the unemployment data set. 
 
 ##### Trend plot
 ```{r Trendplot}
@@ -62,12 +67,14 @@ plot(unemp,ylab="Unemployment",xlab="Years") # plot the raw data
 abline(reg=lm(unemp~time(unemp))) # fit a trend line
 ```
 
+Histogram shows that the data is right skewed with few months has more unemployment and most of the months has unemployment in the range 200-300.
+
 ##### Histogram
 ```{r Histogram}
 hist(unemp) # plot the raw data
 ```
 
-Based on the above trend plot there is a Linear trend in the unemployment rate and also there is some periodic seasonality in the data set especially when we look at the data betweek 1955 and 1970.Also there is a change in mean and variance across the years in the unemployment data set. 
+
 
 
 I have converted the unemp data set to xts to check the yearly mean and variance and plot them.Check the below plots to see the difference in mean and variance across the years.
@@ -81,7 +88,7 @@ plot(period.apply(unemp_xts,INDEX=ep,FUN=var),main="Variance across the years") 
 
 ##### Data transformation.
 
-As there is linear trend and seasonality in the data set I will apply the diff transformation to remove that.
+As there is linear trend and seasonality in the data set I will apply the diff transformation to remove that to make the data stationary. 
 
 ```{r transformation}
 d_unemp <- diff(unemp)
@@ -118,7 +125,7 @@ Plot trend, seasonal and residual of unemployment time series.
 plot(decompose(unemp))
 ```
 
-The decomposition plot shows the observed values in unemployment time series first and then shows the trend where we can see the linear trend and then the seasonal plot shows that unemployment starts higher in Jan and goes low in April and again goes high in June and goes down at the end of the year. The random or residual shows the random component in the time series.
+The decomposition plot shows the observed values in unemployment time series on top and then shows the estimated trend where we can see the linear trend and then the the estimated seasonal plot shows that unemployment starts higher in Jan and goes low in April and again goes high in June and goes down at the end of the year. The random or residual shows the random component in the time series.
 
 
 
